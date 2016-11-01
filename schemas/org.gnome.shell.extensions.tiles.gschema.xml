@@ -1,0 +1,25 @@
+<schemalist gettext-domain="tiles">
+    <schema id="org.gnome.shell.extensions.tiles"
+            path="/org/gnome/shell/extensions/tiles/">
+        <key name="tile-up" type="as">
+            <default><![CDATA[['<Super>Up']]]></default>
+            <summary>Move window up</summary>
+            <description>Move window up</description>
+        </key>
+        <key name="tile-down" type="as">
+            <default><![CDATA[['<Super>Down']]]></default>
+            <summary>Move window down</summary>
+            <description>Move window down</description>
+        </key>
+        <key name="tile-left" type="as">
+            <default><![CDATA[['<Super>Left']]]></default>
+            <summary>Move window left</summary>
+            <description>Move window left</description>
+        </key>
+        <key name="tile-right" type="as">
+            <default><![CDATA[['<Super>Right']]]></default>
+            <summary>Move window right</summary>
+            <description>Move window right</description>
+        </key>
+    </schema>
+</schemalist>

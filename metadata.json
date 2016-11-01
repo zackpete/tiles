@@ -1,0 +1,7 @@
+{
+  "name": "Tiles",
+  "shell-version": [ "3.22.1" ],
+  "uuid": "tiles@extensions.strangeloops.io",
+  "description": "Move windows to pre-determined spots.",
+  "settings-schema": "org.gnome.shell.extensions.tiles"
+}
