@@ -18,30 +18,51 @@ function init() {
   Main.wm.addKeybinding('tile-right', settings, Meta.KeyBindingFlags.NONE, modeType.NORMAL, right);
 }
 
-function up() { move(function (s) { return s.u; }) }
-function down() { move(function (s) { return s.d; }) }
-function left() { move(function (s) { return s.l; }) }
-function right() { move(function (s) { return s.r; }) }
+function up() { move(s => s.u) }
+function down() { move(s => s.d) }
+function left() { move(s => s.l) }
+function right() { move(s => s.r) }
+
+function resize(window, spot) {
+  if (spot) {
+    if (window.get_maximized()) {
+      window.unmaximize(3);
+      spot = spot.d || spot;
+    }
+
+    window.move_resize_frame(true, spot.x, spot.y, spot.w, spot.h);
+  } else {
+    if (!window.get_maximized()) window.maximize(3);
+  }
+}
 
 function move(movement) {
   let spots = get_spots();
   let active_window = global.screen.get_display().get_focus_window();
   if (!active_window) return;
+
   let {x: x, y: y, width: w, height: h} = active_window.get_frame_rect();
-  let {spot: spot, distance: d} = get_closest_spot(spots, center(x, y, h, w));
-  if (d <= 8 || active_window.get_maximized()) {
-    // global.log('moving: x:' + spot.x + ' y:' + spot.y + ' h:' + spot.h + ' w:' + spot.w);
-    let to_move = movement(spot);
-    if (to_move) {
-      active_window.unmaximize(3);
-      active_window.move_resize_frame(true, to_move.x, to_move.y, to_move.w, to_move.h);
-    } else {
-      active_window.maximize(3);
+  let spot = get_closest_spot(spots, center(x, y, h, w));
+  let norm = rect_norm(spot, {x: x, y: y, w: w, h: h});
+
+  if (norm > 10) {
+    resize(active_window, spot);
+    let {x: new_x, y: new_y, width: new_w, height: new_h} = active_window.get_frame_rect();
+    if (x != new_x || y != new_y || h != new_h || w != new_w) {
+      return;
     }
-  } else {
-    active_window.unmaximize(3);
-    active_window.move_resize_frame(true, spot.x, spot.y, spot.w, spot.h);
   }
+
+  resize(active_window, movement(spot));
+}
+
+function rect_norm(rect_one, rect_two) {
+  return Math.sqrt(
+      Math.pow(rect_one.x - rect_two.x, 2) +
+      Math.pow(rect_one.y - rect_two.y, 2) +
+      Math.pow(rect_one.h - rect_two.h, 2) +
+      Math.pow(rect_one.w - rect_two.w, 2)
+  );
 }
 
 function get_closest_spot(spots, point) {
@@ -55,7 +76,7 @@ function get_closest_spot(spots, point) {
     }
   }
 
-  return {distance: closest_distance, spot: closest_spot};
+  return closest_spot;
 }
 
 function get_spots() {
