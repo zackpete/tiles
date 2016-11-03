@@ -1,12 +1,7 @@
+const Convenience = imports.misc.extensionUtils.getCurrentExtension().imports.convenience;
 const Main = imports.ui.main;
 const Meta = imports.gi.Meta;
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Convenience = Me.imports.convenience;
 const Shell = imports.gi.Shell;
-
-let spot_count = 1;
 
 function init() {
   let settings = Convenience.getSettings();
@@ -17,18 +12,21 @@ function init() {
   Main.wm.addKeybinding('tile-right', settings, Meta.KeyBindingFlags.NONE, modeType.NORMAL, right);
 }
 
+function enable() { }
+function disable() { }
+
 function up() { move('up') }
 function down() { move('down') }
 function left() { move('left') }
 function right() { move('right') }
 
 function move(direction) {
-  spot_count = 1;
   let active_window = global.screen.get_display().get_focus_window();
   if (!active_window) return;
 
   let {x: x, y: y, width: w, height: h} = active_window.get_frame_rect();
 
+  // So exiting full screen has expected results
   let x_tweak = 0;
   if (direction == 'left')  x_tweak = -10;
   if (direction == 'right') x_tweak = 10;
@@ -44,10 +42,10 @@ function move(direction) {
   let norm = rect_norm(spot, {x: x, y: y, w: w, h: h});
 
   let next;
-  if (norm > 20) {
+  if (norm > 20) { // If it is not in a spot
     next = spot;
   } else if (direction == 'up' && !spot.u) {
-    active_window.maximize(3);
+    active_window.maximize(3); // 3 is bot left/right and up/down
     return;
   } else if (direction == 'down' && !spot.d) {
     active_window.minimize();
@@ -60,6 +58,8 @@ function move(direction) {
   if (active_window.get_maximized) active_window.unmaximize(3);
   active_window.move_resize_frame(true, next.x, next.y, next.w, next.h);
   active_window.raise();
+
+  // Check to make sure it was moved
   let {x: new_x, y: new_y, width: new_w, height: new_h} = active_window.get_frame_rect();
   if (x != new_x || y != new_y || h != new_h || w != new_w) return;
   next = spot_direction(spot, direction);
@@ -82,7 +82,7 @@ function get_closest_spot(spots, point) {
   return closest_spot;
 }
 
-
+// Split screens into spots and set their directions to one another
 function get_spots() {
   let spots = [];
   let workspace = global.screen.get_active_workspace();
@@ -96,17 +96,15 @@ function get_spots() {
     set_directional_spots(spots[i], spots);
   }
 
-  for (let i = 0; i < spots.length; i++) {
-    dbg(spots[i]);
-  }
   return spots;
 }
 
+// Split a rectangle in halves, and return the two rectangle spots
 function split(rect) {
   let {x: x, y: y, height: h, width: w} = rect;
 
-  let spot1 = {label: spot_count++};
-  let spot2 = {label: spot_count++};
+  let spot1 = {};
+  let spot2 = {};
   let spots = [spot1, spot2];
   if (w > h) { // landscape
     spot1.x = x;
@@ -130,19 +128,7 @@ function split(rect) {
   return spots;
 }
 
-function dbg(spot) {
-  global.log('spot #' + spot.label);
-  global.log('x:' + spot.x + ' y:' + spot.y + ' h:' + spot.h + ' w:' + spot.w + ' c:' +
-             JSON.stringify(spot.c));
-  let dir = "";
-  if (spot.u) dir += ' up:' + spot.u.label;
-  if (spot.d) dir += ' down:' + spot.d.label;
-  if (spot.l) dir += ' left:' + spot.l.label;
-  if (spot.r) dir += ' right:' + spot.r.label;
-  global.log(dir);
-}
-
-
+// Set the directions from spot to others, given all the other spots
 function set_directional_spots(spot, all) {
   let closest = {
     up: {distance: Number.POSITIVE_INFINITY},
@@ -155,44 +141,31 @@ function set_directional_spots(spot, all) {
     let other = all[i];
     if (spot == other) continue;
 
+    // direction starts at left = 0, and goes clockwise til arriving at left again at 2pi
     let direction = Math.atan2(other.c.y - spot.c.y, other.c.x - spot.c.x) + Math.PI;
     let distance = distance_points(spot.c, other.c);
-    let debugs = ""
-    debugs +=
-        'direction from ' + spot.label + ' to ' + other.label + ': ' + (direction * 180 / Math.PI);
-    debugs += ' distance: ' + distance;
 
     if (direction < Math.PI / 4 || direction >= 7 / 4 * Math.PI) {
-      debugs += ' LEFT';
       if (distance < closest.left.distance) {
-        debugs += ' *SELECTED*';
         closest.left.spot = other;
         closest.left.distance = distance;
       }
     } else if (direction < 3 / 4 * Math.PI) {
-      debugs += ' UP';
       if (distance < closest.up.distance) {
-        debugs += ' *SELECTED*';
         closest.up.spot = other;
         closest.up.distance = distance;
       }
     } else if (direction < 5 / 4 * Math.PI) {
-      debugs += ' RIGHT';
       if (distance < closest.right.distance) {
-        debugs += ' *SELECTED*';
         closest.right.spot = other;
         closest.right.distance = distance;
       }
     } else {
-      debugs += ' DOWN';
       if (distance < closest.down.distance) {
-        debugs += ' *SELECTED*';
         closest.down.spot = other;
         closest.down.distance = distance;
       }
     }
-
-    global.log(debugs);
   }
 
   spot.u = closest.up.spot;
@@ -232,7 +205,3 @@ function rect_norm(rect_one, rect_two) {
       Math.pow(rect_one.w - rect_two.w, 2)
   );
 }
-
-function enable() { }
-
-function disable() { }
