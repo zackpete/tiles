@@ -21,5 +21,10 @@
             <summary>Move window right</summary>
             <description>Move window right</description>
         </key>
+        <key name="span-window" type="as">
+            <default><![CDATA[['<Super>x']]]></default>
+            <summary>Span window across screens</summary>
+            <description>Span window across screens</description>
+        </key>
     </schema>
 </schemalist>
